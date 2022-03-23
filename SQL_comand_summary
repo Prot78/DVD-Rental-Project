@@ -1,0 +1,1065 @@
+/* Dr. Andrea Protti data-analyst SQL skills
+Here a collection of some of the SQL coding skills acquired during training
+on the DVD-rental database
+*/
+
+
+/****************************************************************************/
+/* Basic comands */
+
+/*Comand examples: select, from, where, order by, and, or, in, not in, like, not like, asc , desc */
+
+select actor_id, first_name, last_name
+from actor
+where first_name in ('Ben', 'Tom', 'Andrea');
+
+select actor_id, first_name, last_name
+from actor
+where first_name in ('Ben', 'Tom', 'Andrea') and last_name like 'H%'
+order by 3, 2;
+
+select actor_id, first_name, last_name
+from actor
+where first_name like 'A%' or first_name like 'B%'
+	and last_name not like '%ss%'
+order by 2, 3;
+
+
+
+/* Comand examples: > , >= , < , <= , <> , != , betweeen and */
+select first_name, last_name
+from actor
+where first_name > 'Aa' 
+	and first_name <'C'
+	and first_name between 'Al' and 'Ben'
+	and first_name <> 'Alan'
+order by 1;
+
+
+/* Comand examples: distinct , count , group by , having */
+select distinct last_name, first_name
+from actor
+order by 1;
+
+select count(*)
+from actor;       /* return the number of colums*/
+
+select last_name , count(*)
+from actor
+group by last_name
+order by 2 desc;
+
+select last_name , first_name ,  count(*)
+from actor
+group by last_name , first_name
+order by 3 desc;      /* will tell if two actor have the same name and surname */
+
+select last_name , first_name ,  count(*)
+from actor
+group by last_name , first_name
+having count(*) > 1;  /* will tell the actor with the same name and surname */
+
+select last_name ,  count(*)
+from actor
+group by last_name 
+having count(*) >= 3
+	or count(*) = 2  /* can use "having count(*) bewteen 3 and 4 " */
+order by 2 desc;
+
+select last_name    /* if count(*) is taking off, no count column will show!! */
+from actor
+group by last_name 
+having count(*) >= 3
+	or count(*) = 2  /* can use "having count(*) bewteen 3 and 4 " */
+order by 1 desc;
+
+select last_name    
+from actor
+group by last_name
+having count(1) = 1
+order by last_name desc;
+
+
+
+/*Comand examples: concat , limit , as*/
+select first_name, last_name,
+	concat(first_name , ' ', last_name) as "full_name",
+	concat(first_name , ' , ', last_name) as "full_name_comma"
+from actor as "a"
+order by first_name desc , last_name desc
+limit 10;
+
+select first_name, last_name,
+	concat(first_name , ' ', last_name) as "full_name",
+	concat(first_name , ' , ', last_name) as "full_name_comma"
+from actor as "a"
+order by first_name desc , last_name desc
+limit 10;
+
+
+select
+    --actor_id, 
+    first_name,
+    last_name,
+    last_update,
+    count(*),
+    concat(first_name, ' ,', last_name) as "full_name"
+from actor
+where last_name like 'D%'
+      or last_name like 'F%'
+group by first_name,
+         last_name,
+         last_update
+having count(*) >= 1
+order by 4 desc
+--limit 100;
+
+
+/*****************************************************************/
+
+
+/* Comand examples:  left outer join == left join    */
+select first_name
+	, last_name
+	, film.title
+	--, film.description
+	, film_actor.actor_id
+	--, film.rental_duration
+	--, film_actor.last_update  
+from actor
+	left join film_actor     
+		on film_actor.actor_id = actor.actor_id
+	left join film
+		on film.film_id = film_actor.film_id
+		AND film.title = 'Snowman Rollercoaster'
+where actor.first_name = 'Woody'
+	and actor.last_name = 'Hoffman'
+	and film.title is not null 
+	--and film.title = 'Snowman Rollercoaster'
+order by 3 ;
+/****************************************************************/
+
+
+
+/********************************************************************************************************/
+
+
+
+/*Comand examples: CROSS join */
+with setA as (
+ select 'X' as a
+	union all
+	select 'Y'
+	union all
+	select 'Z' )
+, setB as (
+	select '1' as b
+	union all
+	select '2'
+	union all
+	select '3' )
+--select a from setA
+select
+	a
+	,b 
+from setA
+cross join setB;
+/*this last part can be replaced by the below */
+-- select
+-- 	a
+-- 	,b 
+-- 	, date '01/01/2245' as "Task due date"
+-- from setA
+-- cross join setB 
+-- where setA.a = 'Z';
+
+
+with setA as(select generate_series (1,3) as a)
+	, setB as (select CHR(generate_series (85,90)) as b)/* ASCII code with CHR comand*/
+	--,setB as (select CHR(generate_series (88,90)) as b)
+select setA.a, setB.b
+from setA 
+	 cross join setB;
+/****************************************************************/
+
+
+
+/********************************************************************************************************/
+
+
+
+
+/* Comand examples:  COUNT   */
+select first_name
+	, last_name
+	, count(*)
+	--, rental.rental_date
+	--, rental.return_date
+	, payment.amount
+	--, payment.payment_date
+from customer
+	inner join rental
+	on rental.customer_id = customer.customer_id
+	inner join inventory
+	on inventory.inventory_id = rental.inventory_id
+	left join payment
+	on payment.customer_id = customer.customer_id
+	and payment.rental_id = rental.rental_id
+--where customer.customer_id = 336
+where payment.amount is null
+	and payment.rental_id is null
+	--and customer.customer_id = 336
+group by last_name , first_name, payment.amount
+order by count desc;
+
+
+select 
+	count(*)
+	, first_name
+	, last_name
+	--, rental.rental_date
+	--, rental.return_date
+	--, payment.payment_date
+	, film.film_id
+from customer
+	inner join rental
+	on rental.customer_id = customer.customer_id
+	left join inventory
+	on inventory.inventory_id = rental.inventory_id
+	left join film
+	on film.film_id = inventory.film_id
+--where customer.customer_id = 336
+where rental.return_date is null
+	and customer.customer_id = 336
+group by  film.film_id, first_name, last_name
+order by count desc;
+
+
+/* Number of distinct films rented but not returned */
+select distinct 
+	film.title
+	,count(*)
+from film
+	inner join inventory
+	on inventory.film_id = film.film_id
+	inner join rental
+	on rental.inventory_id = inventory.inventory_id
+where rental.return_date is null
+group by film.title
+order by 2 desc;
+/****************************************************************/
+
+
+
+/********************************************************************************************************/
+
+
+
+
+/* Comand examples: SUM , AVG , ROUND , TRUNC , MIN , MAX  */
+select customer.first_name, customer.last_name,
+	count(*),
+	sum(payment.amount) as "Total Money Spent",
+	round(avg(film.length), 3) as "Average Money Spent",
+	trunc(avg(film.length), 3) as "Average Money Spent",
+	min(rental.rental_date) as "Earliest rental date",
+	max(rental.rental_date) as "Latest rental date"
+from film
+	inner join inventory
+	on inventory.film_id = film.film_id
+	inner join rental
+	on rental.inventory_id = inventory.inventory_id
+	left join customer
+	on customer.customer_id = rental.customer_id
+	left join payment
+	on payment.rental_id = rental.rental_id
+group by customer.first_name, customer.last_name
+order by 3 desc;
+
+
+select round(avg(film.rental_rate), 3)
+	from film;
+/****************************************************************/
+
+
+
+/********************************************************************************************************/
+
+
+
+
+
+/* Comand examples: sub-query !!!   where and select*/
+select film.title,
+	film.rental_rate,
+	round(avg(film.rental_rate), 2)
+from film
+where film.rental_rate > (
+	select avg(film.rental_rate)     --subquery in where
+	from film)
+group by film.title, film.rental_rate
+order by film.rental_rate desc;
+
+
+select customer.customer_id,
+	customer.first_name,
+	customer.last_name
+from customer
+where customer.customer_id in (
+	select rental.customer_id
+	from rental
+	where rental.rental_date between '2005-05-25' and '2005-05-26'
+);
+
+
+/* Comand examples: these two example return the same output */
+select customer.customer_id,
+	customer.first_name,
+	customer.last_name,
+	(select min(rental.rental_date)
+		from rental 
+		where (customer.customer_id = rental.customer_id) 
+		)as "Earliest_rental_date",
+	(select max(rental.rental_date) 
+		from rental
+		where (customer.customer_id = rental.customer_id) 
+		)as "Latest_rental_date"
+from customer
+-- 	left join rental
+-- 	on rental.customer_id = customer.customer_id 
+order by 3 desc;
+
+
+select customer.customer_id,
+	customer.first_name,
+	customer.last_name,
+	min(rental.rental_date) as "Earliest_rental_date",
+	max(rental.rental_date) as "Latest_rental_date"
+from customer
+	left join rental
+	on rental.customer_id = customer.customer_id 
+-- 	left join rental
+-- 	on rental.customer_id = customer.customer_id 
+where rental.rental_date = (
+	select max(R1.rental_date)
+	from rental as R1
+	where R1.customer_id = rental.customer_id)
+group by customer.customer_id, customer.first_name, customer.last_name
+order by 3 desc;
+/****************************************************************/
+
+
+
+/********************************************************************************************************/
+
+
+
+/*  HAVING sum  */
+/* Find the top 5 customers bewtween two dates using derived tables */
+select customer.customer_id,
+	customer.first_name,
+	customer.last_name,
+	customer.email,
+	sum(payment.amount) as "Top-five"
+from customer
+	left join payment
+	on payment.customer_id = customer.customer_id 
+where payment.payment_date between '2007-02-15' and '2007-02-21' 
+group by customer.customer_id, customer.first_name, customer.last_name
+having sum(payment.amount) >30
+order by 5 desc
+limit 5;
+
+
+select 
+	customer.first_name,
+	customer.last_name,
+	customer.email,
+	Top_five.total_amount
+	--sum(payment.amount) as "Top-five"
+from (
+		select customer_id, sum(amount) as total_amount
+		from payment
+		where payment_date between '2007-02-15' and '2007-02-21' 
+		group by customer_id
+		having sum(amount) >30
+		order by total_amount desc
+		limit 5
+) as Top_five
+	inner join customer
+		on customer.customer_id = Top_five.customer_id
+order by 4 desc;
+
+
+
+/* EXAMPLES  */
+/* customer that watch most movies */
+select customer.customer_id,
+	customer.first_name,
+	customer.last_name, 
+	--rental.rental_date,
+	film.title,
+	count(film.title)
+from customer
+	inner join rental
+	on rental.customer_id = customer.customer_id
+	inner join inventory
+	on inventory.inventory_id = rental.inventory_id
+	left join film
+	on film.film_id = inventory.film_id
+group by customer.customer_id, film.title
+order by count(film.title) desc
+limit 5;
+
+/*  show  */
+select distinct customer.customer_id,
+	customer.first_name,
+	customer.last_name 
+	, rental.customer_id
+	--rental.rental_date,
+	, film.title
+	, count(film.title) as film_watched
+	--, sum(count(film.title)) over() as Totalfilmwatched
+from customer
+	inner join rental
+	on rental.customer_id = customer.customer_id
+	inner join inventory
+	on inventory.inventory_id = rental.inventory_id
+	left join film
+	on film.film_id = inventory.film_id
+where customer.last_name = 'Miller'
+	and sum(count(film.title)) 
+	--and customer.customer_id = rental.customer_id
+group by customer.customer_id, film.title, rental.customer_id
+--order by count(film.title) desc
+order by customer.last_name desc
+--limit 50;
+
+/* see how many movies a distinct customer watched */
+-- this example is good but not correct because does count as 1 if the customer whatched the movie twice 
+create table Millefilms as 
+	select distinct customer.customer_id as id_,
+		customer.first_name as first,
+		customer.last_name as second 
+		, film.title as title_movie 
+		, count(film.title) as film_watched
+	from customer
+		inner join rental
+		on rental.customer_id = customer.customer_id
+		inner join inventory
+		on inventory.inventory_id = rental.inventory_id
+		left join film
+		on film.film_id = inventory.film_id
+	where customer.last_name = 'Miller'
+	group by customer.customer_id, film.title
+
+select first, second, count(Millefilms.film_watched) as total_film_watched
+from Millefilms
+group by first, second; 
+/******************************/
+
+
+/* which customer whatched more movies?  */
+select  
+	customer.first_name,
+	customer.last_name, 
+	count(rental.rental_id)
+from customer
+	inner join rental
+	on rental.customer_id = customer.customer_id
+	inner join inventory
+	on inventory.inventory_id = rental.inventory_id
+	left join film
+	on film.film_id = inventory.film_id
+where customer.last_name = 'Miller'   --you can take off this if to see the entire list
+group by customer.first_name, customer.last_name
+order by count(rental.rental_id) desc
+limit 5;
+
+
+
+/* what is the most viewed movie? and from whom? */
+select film.title, 
+	film.length,
+	customer.first_name,
+	customer.last_name, 
+	count(rental.rental_id)
+from customer
+	inner join rental
+	on rental.customer_id = customer.customer_id
+	inner join inventory
+	on inventory.inventory_id = rental.inventory_id
+	left join film
+	on film.film_id = inventory.film_id
+-- from film
+-- 	inner join inventory
+-- 	on inventory.film_id = film.film_id
+-- 	inner join rental
+-- 	on rental.customer_id = inventory.inventory_id
+-- 	inner join customer
+-- 	on customer.customer_id = rental.customer_id
+group by film.title, film.length
+	, customer.first_name, customer.last_name
+order by count(rental.rental_id) desc
+limit 5;
+/****************************************************************/
+
+
+
+/********************************************************************************************************/
+
+
+
+
+
+/*Comand examples: EXIST   --    NOT EXIST */
+select customer.customer_id,
+	customer.first_name,
+	customer.last_name,
+	customer.email
+from customer
+where not exists(      --gives the info of customers that do not satisfy the >=30 condition
+	select sum(payment.amount), customer_id
+	from payment
+	where payment_date between '2007-02-15' and '2007-02-21'
+		and payment.customer_id = customer.customer_id
+	group by customer_id
+	having sum(payment.amount) >= 30
+	--order by 1
+);
+
+
+select sum(payment.amount), customer_id
+	from payment
+	where payment_date between '2007-02-15' and '2007-02-21'
+		--and payment.customer_id = customer.customer_id
+	group by customer_id
+	having sum(payment.amount) >= 30
+order by 2;
+/****************************************************************/
+
+
+
+/********************************************************************************************************/
+
+
+
+
+
+/*Comand examples: Union and Union all  (works only if i have the same number of columns like fist_name and last_name between subqueries*/
+select 'Customer' as Type,
+	customer.first_name,
+	customer.last_name
+from customer
+where customer.first_name = 'David'
+
+Union all
+
+select 'Actor' as Type,  --do not rename it as 'Type' just on the first select
+	actor.first_name,
+	actor.last_name
+from actor
+where actor.first_name = 'Susan'
+
+Union all
+
+select 'Actor',
+	actor.first_name,
+	actor.last_name
+from actor
+where actor.first_name = 'Tom';
+/****************************************************************/
+
+
+
+/********************************************************************************************************/
+
+
+
+
+/*Comand examples:  Intersect     Except  */
+/* which is the movie 2 customer both watched?  (use intersept)*/
+/* Exclude from the list the movies that 2 customer both watched?  (use exept)*/
+with CTE as (
+	select actor.first_name,
+		actor.last_name,
+		film.title
+	from actor
+		inner join film_actor
+		on film_actor.actor_id = actor.actor_id
+		inner join film
+		on film.film_id = film_actor.film_id 
+	)
+select title
+from CTE 
+where CTE.last_name = 'Bale'
+intersect 
+--except 
+select title
+from CTE
+where CTE.last_name = 'Monroe' and CTE.first_name = 'Penelope';
+/****************************************************************/
+
+
+
+/********************************************************************************************************/
+
+
+
+
+
+/*Comand examples:   TIME   !!!!!!!  */
+select localtimestamp,
+	current_date,
+	cast (localtimestamp as date) as "Date",   --cast allows to convert a value of one data type into another
+	localtime,
+	cast (localtimestamp as time) as "Time",
+	current_timestamp,
+	current_time,
+	
+	current_timestamp at time zone 'Australia/Adelaide',
+	extract (year from current_timestamp) as "year",
+	extract (day from current_timestamp) as "day",
+	extract (hour from current_timestamp) as "hours",
+	
+	date_part('year', current_date) as "Today''s Year",
+	date_part('month', current_date) as "Today''s Month",
+	
+	date_trunc('year', current_date) as "Trunc Year";
+	
+select age(localtimestamp, date_trunc('year', current_date)) as "AgeExample";  --gives the data between to dates
+	
+/*
+select * from pg_timezone_names;
+*/
+
+/* TIME examples  */
+/*   Which customer rented videos in the month of February  */
+select distinct customer.first_name,
+	customer.last_name,
+	rental.rental_date
+from customer
+	inner join rental
+	on rental.customer_id = customer.customer_id
+where date_part('month', rental.rental_date) = 2; --as "Month of rent";
+
+/* what is the most common hour of renting */
+select extract (hour from rental.rental_date) as hours_of_renting,
+	count (rental.rental_id) as Rental_count
+from rental
+group by extract (hour from rental.rental_date)
+order by 2 desc;
+
+/* what is the most common date of renting */
+select extract (year from rental.rental_date) as year_of_renting,
+	extract (month from rental.rental_date) as month_of_renting,
+	extract (day from rental.rental_date) as day_of_renting,
+	count (rental.rental_id) as Rental_count
+from rental
+group by extract (year from rental.rental_date), extract (month from rental.rental_date), extract (day from rental.rental_date)
+order by count (rental.rental_id) desc;
+
+
+/*    AGE    */
+select rental_date,
+	return_date,
+	age(return_date, rental_date) as AgeOfRental
+from rental 
+where return_date is not null
+group by rental_date, return_date
+order by AgeOfRental desc
+limit 5;
+
+/* avg time of renting */
+select avg(age(return_date, rental_date)) as AvgOfRental
+from rental 
+where return_date is not null
+order by AvgOfRental desc;
+/****************************************************************/
+
+
+
+/********************************************************************************************************/
+
+
+
+
+/*Comand examples:  STRING  !!!!   */
+/* substring([serch text], [start position,[lenght]]) */
+select customer_id,
+	first_name,
+	last_name,
+	email,
+	substring(email, 1, 7) as sub_stringexample,   --substring start at 1 and finish at 7 included
+	position('@' in email),
+	substring(email, 1, (position('@' in email) -1 )) as Username,   --use "-1" to take one string less!! 
+	substring(email, (position('@' in email)+1), length(email)) as email_domain   --mind the +1 to skip one caracter
+	, replace(email, 'sakilacustomer.org', 'testdomain.org') NewDomain	   --replace is used to replace words
+from customer;
+
+/* extract first and last name from email */
+select customer_id,
+	email
+	, substring (email, 1, (position('.' in email) -1 )) as first_name
+	, substring (email, (position('.' in email) +1 ), length(last_name)) as v2last_name  --fisrt way of getting last_name
+	, replace(substring (email, (position('.' in email) +1 ), length(email)), '@sakilacustomer.org', '') v3last_name
+	, substring (email, (position('.' in email) +1 ), (position('@' in email) ) - (position('.' in email) +1 )) as v4last_name
+from customer;
+/****************************************************************/
+
+
+
+/********************************************************************************************************/
+
+
+
+/*Comand examples:      CASE statement    WHEN  THEN           */
+select case
+	when length between 0 and 59 then 'Less than 1 hour'
+	when length between 60 and 119 then 'between 1 and 2 hours'
+	when length > 119 then 'Long movie'
+	else 'Superlong'
+	end
+	, count(film_id) as Countoffilms
+from film
+group by case
+	when length between 0 and 59 then 'Less than 1 hour'
+	when length between 60 and 119 then 'between 1 and 2 hours'
+	when length > 119 then 'Long movie'
+	else 'Superlong'
+	end
+order by Countoffilms desc;
+
+select film_id
+	, title
+	, length
+	, case rating
+		when 'G' then 'General Purpose'
+		when 'PG' then 'Parent required'
+		else 'Unknown'
+		end as Ratingselection
+from film
+order by Ratingselection;
+
+/* how many films are rated with a certain letter? */
+select rating
+	, case rating
+		when 'G' then 'General Purpose'
+		when 'PG' then 'Parent required'
+		else 'Unknown'
+		end as Ratingselection
+	,count(film_id) as Countfilms
+from film
+group by rating
+	, case rating              -- role: we can not write in group just the name of the case statement
+		when 'G' then 'General Purpose'
+		when 'PG' then 'Parent required'
+		else 'Unknown'
+		end            
+order by Ratingselection;
+/****************************************************************/
+
+
+
+/********************************************************************************************************/
+
+
+
+/* Comand examples:   COALESCE        identify the first non-null data in a colum*/
+select rental_id
+	, rental_date
+	,return_date
+	, coalesce(cast(return_date as varchar), 'not returned') as return_datev2   --return_date is a date data type therefore has to be reassing as varchar to behaves like text
+from rental
+order by return_date desc;
+/****************************************************************/
+
+
+
+/********************************************************************************************************/
+
+
+
+/*Comand examples: Integer , varchar , text , date , double precision , char, decimal */
+select cast('2008-06-25' as date)
+	, cast('78.47837' as double precision)
+	, cast (259723.53798 as integer)
+	, cast('78.47837' as DECIMAL(16, 2));
+/****************************************************************/
+
+
+
+/********************************************************************************************************/
+
+
+
+
+/*Comand examples:    TABLE !!!!!!!        Create table */
+create table if not exists crew_members (
+	crewmember_id smallserial primary key not null   --smallrerial increments automatically the crewmember_id
+	, name      text not   null
+	, position  text not   null
+	, join_date timestamp  not null
+	, modified  timestamp  null
+	);
+
+select *
+from crew_members
+
+/* insert information into the new table */
+insert into crew_members (
+	name
+	, position
+	, join_date
+)
+values ('Naomi', 'engeneer', current_timestamp)
+	, ('James', 'Captain', current_timestamp) 
+	, ('Adam', 'Sub-Captain', current_timestamp)
+	, ('James', 'Cook', current_timestamp)
+	, ('Andrea', 'Doctor', current_timestamp)
+	, ('Gina', 'Security', current_timestamp);
+
+select *
+from crew_members
+order by name;
+
+/* update table by changing the info in a specific part of the table */
+update crew_members   
+	set position = 'Marketing'
+		, modified = current_timestamp
+	where crew_members.name = 'Andrea';
+
+delete from crew_members
+	where crew_members.name = 'Adam';
+	
+	
+/*insert the selected colums of a database table into a new table */
+create table Sci_fi_movies as
+	select 
+		category.name as Category
+		, film.title as film_title
+		, film.length as film_lenght
+	from film
+		inner join film_category fc
+			on fc.film_id = film.film_id
+		inner join category
+			on category.category_id = fc.category_id
+	where category.name = 'Sci-Fi'
+
+/* Delete a table from the database */
+drop table millefilms
+/****************************************************************/
+
+
+
+/********************************************************************************************************/
+
+
+
+
+
+/* Excercises   */
+select film.title
+	, count(rental.rental_id)
+from rental
+	inner join inventory
+	on inventory.inventory_id = rental.inventory_id
+	inner join film
+	on film.film_id = inventory.film_id
+group by film.title
+order by 2 desc
+/****************************************************************/
+
+
+
+/********************************************************************************************************/
+
+
+
+                                          
+
+/*   ANALYTIC functions  */
+/* OVER  ,  Partition by*/
+select  distinct customer.customer_id
+	, customer.first_name
+	, customer.last_name
+	, rental.rental_date
+	, payment.payment_date
+	, payment.amount
+	, sum(payment.amount) over(    --this function allows to cumulate the sum respect to the customer_id
+	partition by customer.customer_id   --partition make the system to derive the cumulative sum for each customer
+		order by payment.payment_id
+	) as cumulative_rental_amount
+	, min(payment.amount) over(        --this part can be taken out if needed
+	partition by customer.customer_id  --
+		order by payment.payment_id    --
+	) as min_rental_amount             --
+from public.rental
+	inner join public.customer
+	on customer.customer_id = rental.customer_id
+	inner join public.payment
+	on payment.rental_id = rental.rental_id
+	and payment.customer_id = rental.customer_id
+where extract(month from payment_date) = 2
+	and extract(year from payment_date) = 2007
+-- group by customer.customer_id   --if we use the over function no need for group by
+-- 	, customer.first_name
+-- 	, customer.last_name
+-- 	, rental.rental_date
+-- 	, payment.payment_date
+-- 	, payment.amount
+order by customer.customer_id, payment.payment_date;
+
+
+/* RANK  ,  DENSE RANK  ,  ROW_NUMBER  */
+with CTE as (
+	select customer.customer_id
+		, customer.first_name
+		, customer.last_name
+		, count(rental.rental_id) as Count_of_rental
+	from customer
+		inner join rental
+		on rental.customer_id = customer.customer_id
+	group by customer.customer_id
+)
+select cte.customer_id
+	, cte.first_name
+	, cte.last_name
+	, rank() over (order by Count_of_rental desc) as rank_ex
+	, dense_rank() over (order by Count_of_rental desc) as dense_rank_ex
+	, row_number() over (order by Count_of_rental desc) as row_number_ex
+from cte;
+
+
+/* another way to get the latest rental_date from each customer  */
+with CTE as (
+	select rental.customer_id
+	,rental.inventory_id
+	, rental.rental_date
+	, row_number() over(partition by customer_id order by rental_date desc) rownum
+	from rental
+)
+select  customer.first_name
+	, customer.last_name
+	, CTE.rental_date
+	, film.title
+from CTE
+	inner join customer
+	on customer.customer_id = CTE.customer_id
+	inner join inventory
+	on inventory.inventory_id = CTE.inventory_id
+	left join film
+	on film.film_id = inventory.film_id
+where CTE.rownum=1
+order by customer.first_name, customer.last_name;
+
+/* Example!!  */
+/* Show the sum rental payment for each customer    */ 
+with CTE as (
+		select  distinct customer.customer_id
+			, customer.first_name
+			, customer.last_name
+			, rental.rental_date
+			, payment.payment_date
+			, payment.amount
+			, sum(payment.amount) over(    --this function allows to cumulate the sum respect to the customer_id
+			partition by customer.customer_id   --partition make the system to derive the cumulative sum for each customer
+				order by payment.payment_id
+			) as cumulative_rental_amount
+		from public.rental
+			inner join public.customer
+			on customer.customer_id = rental.customer_id
+			inner join public.payment
+			on payment.rental_id = rental.rental_id
+			and payment.customer_id = rental.customer_id
+		where extract(month from payment_date) = 2
+			and extract(year from payment_date) = 2007
+		order by customer.customer_id, payment.payment_date
+)
+select distinct customer.customer_id
+	--, CTE.cumulative_rental_amount     --if this is inserted will show a lot of lines for each customer
+	, customer.first_name
+	, customer.last_name
+	, max(CTE.cumulative_rental_amount) 
+		over(        --this part can be taken out if needed
+			partition by (customer.customer_id)    
+			) as Sum_rental_payment
+from CTE
+	inner join customer
+	on customer.customer_id = CTE.customer_id 
+	inner join public.rental
+	on rental.customer_id = customer.customer_id
+	inner join public.payment
+	on payment.rental_id = rental.rental_id
+	--where customer.customer_id =1
+group by customer.customer_id
+	, CTE.cumulative_rental_amount
+	, customer.first_name
+	, customer.last_name
+order by Sum_rental_payment desc; --customer.customer_id
+/****************************************************************/
+
+
+
+/********************************************************************************************************/
+
+
+
+
+/*Comand example:   LEAD and LAG   */
+with Weekly_revenue as (
+	select extract(week from payment_date) as week
+		--, payment_date
+		, sum(payment.amount) as revenue
+	from rental
+	inner join public.payment
+	on payment.rental_id = rental.rental_id
+	and payment.customer_id = rental.customer_id
+	group by extract(week from payment_date) --, payment_date
+)
+select week
+	, revenue
+	, lag(revenue,1) over(order by week) as LAG_Example    -- moving revenue by 1 week
+	, lag(revenue,2) over(order by week) as LAG_Example2    -- moving revenue by 2 weeks
+	, lead(revenue,1) over(order by week) as LEAD_Example    -- moving revenue back by 1 week
+	, lead(revenue,2) over(order by week) as LEAD_Example2    -- moving revenue back by 2 weeks
+	
+	, revenue - lag(revenue,1) over(order by week) as week_over_week_revenue
+from Weekly_revenue
+/****************************************************************/
+
+
+
+/********************************************************************************************************/
+
+
+
+/*   TEMP TABLE   */
+create temp table if not exists temp_crew_members (
+	crewmember_id smallserial primary key not null   --smallrerial increments automatically the crewmember_id
+	, name      text not   null
+	, position  text not   null
+	, join_date timestamp  not null
+	, modified  timestamp  null
+	);
+	
+/* insert information into the new table */
+insert into temp_crew_members (
+	name
+	, position
+	, join_date
+)
+values ('Naomi', 'engeneer', current_timestamp)
+	, ('James', 'Captain', current_timestamp) 
+	, ('Adam', 'Sub-Captain', current_timestamp)
+	, ('James', 'Cook', current_timestamp)
+	, ('Andrea', 'Doctor', current_timestamp)
+	, ('Gina', 'Security', current_timestamp);
+
+select *
+from temp_crew_members
+order by name;
+
+-- cte differ from temporay table because the scope of such is limited to a single query
+-- temporary table can be used during in the session or tab but not outside it   !!! 
+

@@ -6,4 +6,4 @@ The exploration goes from data cleaning to data assembly, from sub-queries to jo
 A EGR image of the database is also reported together with the database (.tar file) itself. 
 
 
-![hello](ERG_DVDrental.png).
+![hello](ERG_DVDrental.PNG).
